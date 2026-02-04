@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joy Dental - Smart Assistant Demo</title>
+    <style>
+        /* 1. Base Setup */
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            /* Just a placeholder background for the demo */
+            background-image: radial-gradient(#e0e7ff 1px, transparent 1px);
+            background-size: 20px 20px;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        /* 2. The Floating Button (FAB) */
+        .fab-container {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 15px;
+        }
+
+        .fab-button {
+            width: 60px;
+            height: 60px;
+            background-color: #25D366; /* WhatsApp Green */
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .fab-button:hover {
+            transform: scale(1.1);
+        }
+
+        .fab-button svg {
+            width: 35px;
+            height: 35px;
+            fill: white;
+        }
+
+        /* The Red Notification Dot */
+        .badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background-color: #ff3b30;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+        }
+
+        /* 3. The Chat Box (Hidden by default) */
+        .chat-box {
+            width: 350px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            transform-origin: bottom right;
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+            pointer-events: none; /* Can't click when hidden */
+        }
+
+        /* The "Active" State (Visible) */
+        .chat-box.open {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+
+        /* 4. Chat Header */
+        .chat-header {
+            background: linear-gradient(135deg, #075e54, #128c7e);
+            padding: 20px;
+            color: white;
+            position: relative;
+        }
+
+        .chat-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .chat-header p {
+            margin: 5px 0 0;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        /* 5. Chat Body (The Questions) */
+        .chat-body {
+            padding: 20px;
+            background-color: #efe7dd; /* WhatsApp classic BG color */
+            min-height: 250px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Chat Bubbles */
+        .message {
+            max-width: 85%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            line-height: 1.4;
+            position: relative;
+            animation: slideUp 0.3s ease-out forwards;
+        }
+
+        .message.bot {
+            background: white;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .message.user {
+            background: #dcf8c6;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* 6. Option Buttons */
+        .options-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            animation: fadeIn 0.5s ease-in forwards;
+        }
+
+        .option-btn {
+            background: white;
+            border: 1px solid #128c7e;
+            color: #128c7e;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            background: #128c7e;
+            color: white;
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Close Button in Header */
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+        .close-btn:hover { opacity: 1; }
+/* ... existing styles ... */
+
+       /* TYPING INDICATOR (With Text) */
+.typing-indicator {
+    background-color: white;
+    padding: 10px 15px; /* Slightly smaller padding */
+    border-radius: 20px;
+    border-bottom-left-radius: 4px; 
+    display: inline-flex; /* Allows text and dots to sit side-by-side */
+    align-items: center;  /* Centers them vertically */
+    gap: 8px;             /* Space between text and dots */
+    margin-bottom: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    align-self: flex-start;
+    animation: slideUp 0.3s ease-out forwards;
+}
+
+/* The Text "Bot is thinking" */
+.typing-text {
+    font-size: 12px;
+    color: #888; /* Grey color looks more "system" like */
+    font-style: italic;
+}
+
+/* The Dots Animation */
+.typing-dots span {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    background-color: #888; /* Match text color */
+    border-radius: 50%;
+    animation: wave 1.3s linear infinite;
+    margin-right: 2px;
+}
+
+.typing-dots span:nth-child(2) { animation-delay: -1.1s; }
+.typing-dots span:nth-child(3) { animation-delay: -0.9s; margin-right: 0; }
+
+@keyframes wave {
+    0%, 60%, 100% { transform: initial; }
+    30% { transform: translateY(-5px); }
+}
+    </style>
+</head>
+<body>
+
+    <div style="text-align: center; opacity: 0.6;">
+        <h1>Example Website</h1>
+        <p>Scroll down or look at the bottom right corner.</p>
+    </div>
+
+    <div class="fab-container">
+        
+        <div class="chat-box" id="chatBox">
+            <div class="chat-header">
+                <h3>Dental Support</h3>
+                <p>Typically replies instantly</p>
+                <button class="close-btn" onclick="toggleChat()">×</button>
+            </div>
+            <div class="chat-body" id="chatBody">
+                </div>
+        </div>
+
+        <div class="fab-button" onclick="toggleChat()">
+            <div class="badge">1</div>
+            <svg viewBox="0 0 32 32">
+                <path d="M16 2C8.3 2 2 8.3 2 16c0 2.5.6 4.8 1.8 6.9L2.2 29.8l7.1-1.9C11.3 29.1 13.6 29.8 16 29.8c7.7 0 14-6.3 14-14S23.7 2 16 2zm0 25.5c-2.1 0-4.1-.5-5.9-1.5l-.4-.2-4.4 1.2 1.2-4.2-.3-.4C5.2 20.6 4.7 18.4 4.7 16 4.7 9.8 9.8 4.7 16 4.7s11.3 5.1 11.3 11.3-5.1 11.5-11.3 11.5z"/>
+                <path d="M22.1 18.9c-.3-.1-1.5-.8-1.7-.9-.2-.1-.4-.1-.5.1-.2.2-.6.8-.8.9-.1.2-.3.2-.6.1-1.3-.6-2.1-1.1-2.9-2.5-.1-.2 0-.3.1-.4l.3-.4c.1-.1.2-.3.4-.4.1-.2.1-.3 0-.4-.1-.1-.5-1.1-.6-1.5-.2-.4-.4-.4-.5-.4h-.5c-.2 0-.5.1-.8.3-.3.3-1 .9-1 2.3s1.1 2.7 1.2 2.9c.1.2 2.1 3.2 5.1 4.5 1.8.8 2.5.8 3.5.7 1.1-.1 2.4-1 2.8-1.9.3-.9.3-1.7.2-1.9-.1-.2-.3-.3-.6-.5z"/>
+            </svg>
+        </div>
+    </div>
+    <script>
+    // 1. Logic Configuration
+    const botLogic = {
+        start: {
+            text: "Hello! 👋 Welcome to xx Dental. How can we help you today?",
+            options: [
+                { label: "📅 Book Appointment", next: "booking" },
+                { label: "💰 Check Prices", next: "pricing" },
+                { label: "📍 Location & Hours", next: "location" }
+            ]
+        },
+        booking: {
+            text: "Great! What kind of treatment do you need?",
+            options: [
+                { label: "Scaling & Polishing", next: "wa_scaling" },
+                { label: "Braces Consultation", next: "wa_braces" },
+                { label: "⬅️ Back", next: "start" }
+            ]
+        },
+        pricing: {
+            text: "Our basic prices start at:\n- Scaling: RM100\n- Whitening: RM500\n\nWould you like a full quote?",
+            options: [
+                { label: "Yes, chat with Admin", next: "wa_pricing" },
+                { label: "No, Back to Menu", next: "start" }
+            ]
+        },
+        location: {
+            text: "We are located at 1-1, 37, Medan Kampung Relau 1, I-avenue, 11900 Bayan Lepas, Penang.\nOperating Hours: Mon–Wed, Fri–Sun: 10 am–1 pm, 2–6 pm (Closed on Thursday)",
+            options: [
+                { label: "Get Waze/Maps", next: "wa_location" },
+                { label: "Back", next: "start" }
+            ]
+        },
+        // Links
+        wa_scaling: { type: "link", url: "https://wa.me/601116465430?text=Hi,I want to booking about Scaling.", msg: "Opening WhatsApp in new tab..." },
+        wa_braces: { type: "link", url: "https://wa.me/601116465430?text=Hi,I want to know about Braces info.", msg: "Opening WhatsApp in new tab..." },
+        wa_pricing: { type: "link", url: "https://wa.me/601116465430?text=Hi,What is the price list?", msg: "Opening WhatsApp in new tab..." },
+        wa_location: { type: "link", url: "https://ul.waze.com/ul?place=ChIJe7vbiLPBSjARquzRG9jB5Es&amp;ll=5.33291810%2C100.29340420&amp;navigate=yes&amp;utm_campaign=default&amp;utm_source=waze_website&amp;utm_medium=lm_share_location", msg: "Opening Waze..." }
+    };
+
+    // 2. State Management
+    let isChatOpen = false;
+    const chatBox = document.getElementById('chatBox');
+    const chatBody = document.getElementById('chatBody');
+
+    // 3. Toggle Chat
+    function toggleChat() {
+        isChatOpen = !isChatOpen;
+        if (isChatOpen) {
+            chatBox.classList.add('open');
+            if (chatBody.innerHTML.trim() === "") {
+                // First launch: Fake typing for 1 second, then show start
+                showTypingAndMessage('start', 500); 
+            }
+        } else {
+            chatBox.classList.remove('open');
+        }
+    }
+
+   function showTypingAndMessage(stepId, delay = 2000) {
+        const step = botLogic[stepId];
+
+        // A. Create Typing Bubble
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'typing-indicator';
+        typingDiv.id = 'typing';
+        
+        // HERE IS THE CHANGE: Added text + dots container
+        typingDiv.innerHTML = `
+            <span class="typing-text">Bot is thinking</span>
+            <div class="typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+        `;
+        
+        chatBody.appendChild(typingDiv);
+        scrollToBottom();
+
+        // B. Wait for the delay
+        setTimeout(() => {
+            // Remove typing bubble
+            const existingTyping = document.getElementById('typing');
+            if (existingTyping) existingTyping.remove();
+
+            // C. Show the actual message/link
+            processStep(step, stepId);
+
+        }, delay);
+    }
+
+    // 5. Process the Step (Show Text or Handle Link)
+    function processStep(step, stepId) {
+        // LINK HANDLING
+        if (step.type === "link") {
+            addMessage(step.msg, 'bot');
+            setTimeout(() => window.open(step.url, '_blank'), 1200);
+            setTimeout(() => showRestartButton(), 1500);
+            return;
+        }
+
+        // TEXT HANDLING
+        addMessage(step.text, 'bot');
+        
+        // Show Buttons
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'options-container';
+        
+        step.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt.label;
+            btn.onclick = () => {
+                optionsDiv.remove(); // Remove buttons
+                addMessage(opt.label, 'user'); // Show user choice
+                
+                // TRIGGER NEXT STEP WITH TYPING DELAY
+                showTypingAndMessage(opt.next, 2000); 
+            };
+            optionsDiv.appendChild(btn);
+        });
+        chatBody.appendChild(optionsDiv);
+        scrollToBottom();
+    }
+
+    // 6. Helpers
+    function showRestartButton() {
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'options-container';
+        const restartBtn = document.createElement('button');
+        restartBtn.className = 'option-btn';
+        restartBtn.innerText = "🔄 Start Over";
+        restartBtn.style.background = "#f0f2f5";
+        restartBtn.style.color = "#333";
+        restartBtn.onclick = () => {
+            optionsDiv.remove();
+            addMessage("🔄 Start Over", 'user');
+            showTypingAndMessage('start', 500); // Restart with short delay
+        };
+        optionsDiv.appendChild(restartBtn);
+        chatBody.appendChild(optionsDiv);
+        scrollToBottom();
+    }
+
+    function addMessage(text, sender) {
+        const div = document.createElement('div');
+        div.className = `message ${sender}`;
+        div.innerText = text; // Used innerText for safety
+        // Detect newlines for formatting
+        div.style.whiteSpace = "pre-line"; 
+        chatBody.appendChild(div);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+</script>
+</body>
+</html>
